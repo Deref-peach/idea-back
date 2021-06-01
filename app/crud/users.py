@@ -1,10 +1,9 @@
 from .base import CrudBase
-from app.schemas import CreateUser, UpdateUser, DeleteUser
 from app.models import User
 from sqlalchemy.orm import Session
 from app.core import verify_password
 from typing import Optional
-
+from app.schemas.user import  CreateUser, 
 
 class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
     def delete(self, db: Session, obj_in: DeleteUser):
@@ -24,3 +23,7 @@ class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
     def get_by_username(self , db: Session, username: str):
         return db.query(self.model).filter(self.model.username == username).first()
 
+    def check_username(self, db: Session, username: str):
+        return db.query(self.model) # TODO
+
+cruduser = CrudUser(User)

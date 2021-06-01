@@ -5,4 +5,5 @@ class Query:
     me: list
     username: list
 
+
 schema = stb.Schema(query=Query)
