@@ -1,18 +1,21 @@
 from .base import CrudBase
 from app.models import User
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.core import verify_password
 from typing import Optional
-from app.schemas.user import  CreateUser, 
+from app.schemas.user import  CreateUser, UpdateUser, DeleteUser
+from dataclasses import asdict
+
 
 class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
-    def delete(self, db: Session, obj_in: DeleteUser):
-        obj = db.query(self.model).filter_by(**obj_in.dict(exclude_unset=True))
-        db.delete(obj)
-        db.commit()
-        return obj
+    async def check_passwd_and_uname(self, db: AsyncSession, obj_in: DeleteUser):
+        dct = asdict(obj_in)
+        st = select(self.model).filter_by(**dct).exists()
+        res = await db.execute(st)
+        return res
 
-    def authenticate(self, db: Session, username: str, password: str) -> Optional[User]:
+    def authenticate(self, db: AsyncSession, username: str, password: str) -> Optional[User]:
         user = self.get_by_username(db, username)
         if not user:
             return None
@@ -20,10 +23,19 @@ class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
             return None
         return user
 
-    def get_by_username(self , db: Session, username: str):
-        return db.query(self.model).filter(self.model.username == username).first()
+    async def get_by_username(self , db: AsyncSession, username: str):
+        st = select(self.model).filter(self.model.username == username).first()
+        return await db.execute(st)
 
-    def check_username(self, db: Session, username: str):
-        return db.query(self.model) # TODO
+    async def username_isexist(self, db: AsyncSession, username: str):
+        stat = select(self.model.username).filter_by(username=username).exists()
+        res = await db.execute(stat) 
+        return res
+
+    async def delete_by_username(self, db: AsyncSession, username: str):
+        obj = select(self.model.username).filter_by(username=username)
+        await db.delete(obj)
+        await db.commit()
+        return obj
 
 cruduser = CrudUser(User)

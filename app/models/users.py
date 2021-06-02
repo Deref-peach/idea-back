@@ -4,7 +4,7 @@ from sqlalchemy import CHAR, Integer, VARCHAR, Column
 class User(Base):
     __tablename__ = 'Users'
     username = Column(VARCHAR(32), primary_key=True, index=True)
-    fullname = Column(VARCHAR(20), nullable=False)
+    fullname = Column(VARCHAR(32), nullable=False)
     email = Column(VARCHAR(32), nullable=False)
     resume = Column(VARCHAR(255))
     # todo skills

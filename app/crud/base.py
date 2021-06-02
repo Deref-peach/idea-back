@@ -1,6 +1,6 @@
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import AsyncSession
 from dataclasses import asdict
 from app.db.base import Base
 
@@ -10,7 +10,7 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", )
 
 
 class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    def __init__(self, model: Type[ModelType]):
+    async def __init__(self, model: Type[ModelType]):
         """
         CRUD object with default methods to Create, Read, Update, Delete (CRUD).
         **Parameters**
@@ -19,11 +19,11 @@ class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """
         self.model = model
 
-    def get(self, db: Session, id: int) -> Optional[ModelType]:
+    async def get(self, db: AsyncSession, id: int) -> Optional[ModelType]:
         return db.query(self.model).filter(self.model.id == id).first()
 
 
-    def create(self, db: Session, obj_in: CreateSchemaType) -> ModelType:
+    async def create(self, db: AsyncSession, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = asdict(obj_in)
         db_obj = self.model(**obj_in_data)  # type: ignore
         db.add(db_obj)
@@ -32,9 +32,9 @@ class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
 
-    def update(# TODO
+    async def update(# TODO
         self,
-        db: Session,
+        db: AsyncSession,
         db_obj: ModelType,
         obj_in: Union[UpdateSchemaType, Dict[str, Any]]
     ) -> ModelType:
@@ -46,13 +46,13 @@ class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         for field in obj_data:
             if field in update_data:
                 setattr(db_obj, field, update_data[field]) # TODO: тут может ноне прилететь, дыру запили, чмо
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        await db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
         return db_obj
 
-    def delete(self, db: Session, *, id: int) -> ModelType:
+    async def delete(self, db: AsyncSession, *, id: int) -> ModelType:
         obj = db.query(self.model).get(id)
-        db.delete(obj)
-        db.commit()
+        await db.delete(obj)
+        await db.commit()
         return obj

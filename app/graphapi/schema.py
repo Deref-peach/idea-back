@@ -1,9 +1,5 @@
 import strawberry as stb
+from .mutation import Mutation
+from .query import Query
 
-@stb.type
-class Query:
-    me: list
-    username: list
-
-
-schema = stb.Schema(query=Query)
+schema = stb.Schema(query=Query, mutation=Mutation)
