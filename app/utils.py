@@ -58,6 +58,8 @@ def send_del_account_email(email_to: str, username: str, link: str) -> None:
         },
     )
 
+def get_current_user():
+    pass
 
 def update_cls(dct: dict, cls):
     cls.__dict__.update(dct)

@@ -1,20 +1,12 @@
 from app.graphapi import schema
 from starlette.applications import Starlette
-from starlette.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from strawberry.asgi import GraphQL
 import uvicorn
-from app.restapi import routes
+from app.restapi import middlewares, routes
 
 
-app = Starlette(debug=settings.DEBUG, routes=routes)
-app.add_middleware(
-    CORSMiddleware, 
-    allow_headers=["*"], 
-    allow_origins=settings.ALLOWED_HOSTS, 
-    allow_methods=["*"],
-    allow_credentials=True,
-)
+app = Starlette(debug=settings.DEBUG, routes=routes, middleware=middlewares)
 
 graphql_app = GraphQL(schema, debug=settings.DEBUG)
 

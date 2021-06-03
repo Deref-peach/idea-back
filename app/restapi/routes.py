@@ -1,18 +1,22 @@
 from starlette.routing import Route
 from starlette.responses import RedirectResponse
-from app.db import reg_confirm_redis, get_session, del_users_redis
+from app.db import get_session
 from app.crud import cruduser
+from app.crud import crudtoken
+
 
 async def delete_user(request):
+    ses = await get_session()
     uuid = request.path_params['uuid']
-    val = await del_users_redis.get(uuid)
-    await del_users_redis.delete(uuid)
-    await cruduser.delete_by_username(get_session(), val)
+    username = crudtoken.get_username(ses, uuid)
+    await cruduser.delete_by_username(ses, username)
     return RedirectResponse(url="/")
 
 async def create_user(request):
     uuid = request.path_params['uuid']
-    await reg_confirm_redis.delete(uuid)
+    ses = await get_session()
+    username = await crudtoken.get_username(ses, uuid)
+    await cruduser.set_confirmed(ses, username)
     return RedirectResponse(url="/")
 
 
@@ -20,3 +24,4 @@ routes = [
     Route("/delete/{uuid:uuid}", delete_user),
     Route("/create/{uuid:uuid}", create_user),
 ]
+

@@ -1,14 +1,13 @@
 from typing import Optional
 import strawberry as stb
-from app.schemas.user import CreateUser, DeleteUser
-from app.crud import cruduser
+from app.schemas.user import CreateUser, DeleteUser, UpdateUser
+from app.crud import cruduser, crudtoken
 import uuid
 from app.utils import send_del_account_email, send_new_account_email
 from app.db import get_session
-from app.db import reg_confirm_redis, del_users_redis
 from app.core.config import settings
 from dataclasses import asdict
-
+from app.core.security import get_password_hash
 
 @stb.type
 class UsernameAlreadyExistsError:
@@ -29,19 +28,20 @@ RegisterUserResponse = stb.union(
 class Mutation:
     @stb.mutation
     async def CreateUser(self, user: CreateUser):
-        ses = get_session()
+        ses = await get_session()
         if cruduser.username_isexist(ses, user.username):
             return UsernameAlreadyExistsError(username=user.username)
+        user.hashed_password = get_password_hash(user.hashed_password)
         try:
             await cruduser.create(ses, user)
         except: # len error
             return FieldLenError()
+        
         _uuid = str(uuid.uuid4())
         link = f"/{_uuid}"
         send_new_account_email(user.email, user.username, link)
 
-        await reg_confirm_redis.set(_uuid, user.username)
-        await reg_confirm_redis.expire(_uuid, settings.REDIS_CACHE_EXP_TIME)
+        await crudtoken.create(ses, uuid=_uuid, username=user.username)
 
     @stb.mutation
     async def DeleteUser(self, user: DeleteUser):
@@ -50,11 +50,9 @@ class Mutation:
         _uuid = str(uuid.uuid4())
         link = f"/{_uuid}"
         send_del_account_email(user.email, user.username, link)
-
-        await del_users_redis.set(_uuid, user.username)
-        await del_users_redis.expire(_uuid, settings.REDIS_CACHE_EXP_TIME)
+        
+        await crudtoken.create(ses, uuid=_uuid, username=user.username)
 
     @stb.mutation
-    async def UpdateUser(self, user):
+    async def UpdateUser(self, user: UpdateUser):
         pass
-

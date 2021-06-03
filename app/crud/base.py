@@ -1,6 +1,5 @@
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
-
-from sqlalchemy.orm import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from dataclasses import asdict
 from app.db.base import Base
 
@@ -10,7 +9,7 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", )
 
 
 class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    async def __init__(self, model: Type[ModelType]):
+    def __init__(self, model: Type[ModelType]):
         """
         CRUD object with default methods to Create, Read, Update, Delete (CRUD).
         **Parameters**
@@ -26,11 +25,11 @@ class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     async def create(self, db: AsyncSession, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = asdict(obj_in)
         db_obj = self.model(**obj_in_data)  # type: ignore
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        await db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
         return db_obj
-
+        
 
     async def update(# TODO
         self,

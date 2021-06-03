@@ -1,7 +1,7 @@
 from .base import CrudBase
 from app.models import User
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from app.core import verify_password
 from typing import Optional
 from app.schemas.user import  CreateUser, UpdateUser, DeleteUser
@@ -37,5 +37,9 @@ class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
         await db.delete(obj)
         await db.commit()
         return obj
+    
+    async def set_confirmed(self, db: AsyncSession, username: str):
+        st = update(self.model).where(self.model.username == username).values(confirmed=True)
+        await db.execute(st)
 
 cruduser = CrudUser(User)
