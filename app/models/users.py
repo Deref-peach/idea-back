@@ -1,17 +1,14 @@
-from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql.sqltypes import Boolean
+from sqlalchemy.sql.sqltypes import Boolean, Integer
 from app.db.base import Base
-from sqlalchemy import CHAR, Integer, VARCHAR, Column
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import CHAR, VARCHAR, Column
 from sqlalchemy.orm import relationship
-import uuid
 
 
 class User(Base):
-    __tablename__ = 'user'
-    username = Column(VARCHAR(32), primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    username = Column(VARCHAR(32), unique=True, nullable=False)
     fullname = Column(VARCHAR(32), nullable=False)
-    email = Column(VARCHAR(32), nullable=False)
+    email = Column(VARCHAR(32), nullable=False, unique=True)
     resume = Column(VARCHAR(255))
     # todo skills
     hashed_password = Column(CHAR(128), nullable=False)
@@ -21,8 +18,3 @@ class User(Base):
     # def __repr__(self):
     #     return f"User<id={self.id}, username={self.username}>"
 
-class ConfirmToken(Base):
-    __tablename__ = "token"
-    token = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username = Column(VARCHAR(32), ForeignKey('user.username'))
-    user = relationship("User")

@@ -13,5 +13,10 @@ class Settings:
     PROJECT_NAME = "Crew st"
     REDIS_URL = ""
     REDIS_CACHE_EXP_TIME = 86400 # DAY
+    # EMAIL_NAME = os.getenv("EMAIL_NAME")
+    EMAIL = os.getenv("EMAIL")
+    EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+    SMTP_HOST = 'smtp.gmail.com'
+    SMTP_PORT = 587
 
 settings = Settings()

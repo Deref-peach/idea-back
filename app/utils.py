@@ -1,57 +1,63 @@
 from app.core.config import settings
-import emails
-import logging
-from emails.template import JinjaTemplate
-from pathlib import Path
+from jinja2 import Environment, FileSystemLoader
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from smtplib import SMTP
+
 
 def send_email(
     email_to: str,
-    subject_template: str = "",
-    html_template: str = "",
-    environment = {},
-) -> None:
-    message = emails.Message(
-        subject=JinjaTemplate(subject_template),
-        html=JinjaTemplate(html_template),
-        mail_from=(settings.EMAILS_FROM_NAME, settings.EMAILS_FROM_EMAIL),
-    )
-    smtp_options = {"host": settings.SMTP_HOST, "port": settings.SMTP_PORT}
-    smtp_options["tls"] = True
-    if settings.SMTP_USER:
-        smtp_options["user"] = settings.SMTP_USER
-    if settings.SMTP_PASSWORD:
-        smtp_options["password"] = settings.SMTP_PASSWORD
-    response = message.send(to=email_to, render=environment, smtp=smtp_options)
-    logging.info(f"send email result: {response}")
+    subject: str = "",
+    template_path: str = "",
+    environment = None,
+):
+    if environment is None:
+        environment = {}
 
-def send_new_account_email(email_to: str, username: str, link: str) -> None:
+    email_from = settings.EMAIL
+    message = MIMEMultipart()
+    loader = FileSystemLoader(settings.TEMPLATES_DIR)
+    env = Environment(loader=loader)
+    template = env.get_template(template_path)
+    msg = template.render(**environment)
+
+    message['Subject'] = subject
+    message['From'] = email_from
+    message['To'] = email_to
+    message.attach(MIMEText(msg, "html"))
+    msgBody = message.as_string()
+
+    server = SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+    server.starttls()
+    server.login(email_from, settings.EMAIL_PASSWORD)
+    server.sendmail(email_from, email_to, msgBody)
+
+    server.quit()
+
+def send_new_account_email(email_to: str, username: str, link: str):
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - New account for user {username}"
-    with open(Path(settings.TEMPLATES_DIR) / "new_account.html") as f:
-        template_str = f.read()
     send_email(
         email_to=email_to,
-        subject_template=subject,
-        html_template=template_str,
+        subject=subject,
+        template_path='new_account.html',
         environment={
-            "project_name": settings.PROJECT_NAME,
+            "project_name": project_name,
             "username": username,
             "email": email_to,
             "link": link,
         },
     )
 
-def send_del_account_email(email_to: str, username: str, link: str) -> None:
+def send_del_account_email(email_to: str, username: str, link: str):
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Delete account for user {username}"
-    with open(Path(settings.TEMPLATES_DIR) / "del_account.html") as f:
-        template_str = f.read()
     send_email(
         email_to=email_to,
-        subject_template=subject,
-        html_template=template_str,
+        subject=subject,
+        template_path='del_account.html',
         environment={
-            "project_name": settings.PROJECT_NAME,
+            "project_name": project_name,
             "username": username,
             "email": email_to,
             "link": link,
