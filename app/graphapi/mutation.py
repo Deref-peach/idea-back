@@ -45,7 +45,7 @@ class Mutation:
 
     @stb.mutation
     async def DeleteUser(self, user: DeleteUser):
-        ses = get_session()
+        ses = await get_session()
 
         _uuid = str(uuid.uuid4())
         link = f"/{_uuid}"

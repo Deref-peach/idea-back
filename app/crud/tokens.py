@@ -7,14 +7,14 @@ class CrudToken:
     def __init__(self, model):
         self.model = model
 
-    async def create(self, db: AsyncSession, uuid: str, username: str) -> ConfirmToken:
+    async def create(self, db: AsyncSession, uuid: str, username: str):
         db_obj = self.model(username=username, token=uuid)
         await db.add(db_obj)
         await db.commit()
         await db.refresh(db_obj)
 
     async def get_username(self, db: AsyncSession, token: str):
-        st = select(self.model).filter_by(token=token).first()
+        st = select(self.model).filter_by(token=token)
         res = await db.execute(st)
         username = res.username
         await res.delete()

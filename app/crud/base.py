@@ -2,6 +2,8 @@ from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from dataclasses import asdict
 from app.db.base import Base
+from sqlalchemy import select, delete
+
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", )
@@ -19,8 +21,9 @@ class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     async def get(self, db: AsyncSession, id: int) -> Optional[ModelType]:
-        return db.query(self.model).filter(self.model.id == id).first()
-
+        st = select(self.model).filter(self.model.id == id) # type: ignore
+        res = await db.execute(st)
+        return res.first()
 
     async def create(self, db: AsyncSession, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = asdict(obj_in)
@@ -29,7 +32,7 @@ class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
-        
+
 
     async def update(# TODO
         self,
@@ -41,7 +44,7 @@ class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = asdict(obj_in ) 
+            update_data = asdict(obj_in) 
         for field in obj_data:
             if field in update_data:
                 setattr(db_obj, field, update_data[field]) # TODO: тут может ноне прилететь, дыру запили, чмо
@@ -50,8 +53,7 @@ class CrudBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await db.refresh(db_obj)
         return db_obj
 
-    async def delete(self, db: AsyncSession, *, id: int) -> ModelType:
-        obj = db.query(self.model).get(id)
-        await db.delete(obj)
+    async def delete(self, db: AsyncSession, id: int):
+        st = delete(self.model).where(id == id)
+        await db.execute(st)
         await db.commit()
-        return obj

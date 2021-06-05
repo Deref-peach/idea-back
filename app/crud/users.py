@@ -1,12 +1,14 @@
 from .base import CrudBase
 from app.models import User
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from app.core import verify_password
 from typing import Optional
 from app.schemas.user import  CreateUser, UpdateUser, DeleteUser
 from dataclasses import asdict
 
+class Container:
+    pass
 
 class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
     async def check_passwd_and_uname(self, db: AsyncSession, obj_in: DeleteUser):
@@ -15,8 +17,8 @@ class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
         res = await db.execute(st)
         return res
 
-    def authenticate(self, db: AsyncSession, username: str, password: str) -> Optional[User]:
-        user = self.get_by_username(db, username)
+    async def authenticate(self, db: AsyncSession, username: str, password: str) -> Optional[User]:
+        user = await self.get_by_username(db, username)
         if not user:
             return None
         if not verify_password(password, user.hashed_password):
@@ -24,8 +26,9 @@ class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
         return user
 
     async def get_by_username(self , db: AsyncSession, username: str):
-        st = select(self.model).filter(self.model.username == username).first()
-        return await db.execute(st)
+        st = select(self.model).filter(self.model.username == username)
+        res = await db.execute(st)
+        return res.first()
 
     async def username_isexist(self, db: AsyncSession, username: str):
         stat = select(self.model.username).filter_by(username=username).exists()
@@ -33,13 +36,22 @@ class CrudUser(CrudBase[User, CreateUser, UpdateUser]):
         return res
 
     async def delete_by_username(self, db: AsyncSession, username: str):
-        obj = select(self.model.username).filter_by(username=username)
-        await db.delete(obj)
-        await db.commit()
-        return obj
-    
-    async def set_confirmed(self, db: AsyncSession, username: str):
-        st = update(self.model).where(self.model.username == username).values(confirmed=True)
+        st = delete(self.model).where(username==username)
         await db.execute(st)
+        await db.commit()
+
+    async def set_confirmed(self, db: AsyncSession, username: str, val: bool = True):
+        st = update(self.model).where(self.model.username == username).values(confirmed=val)
+        await db.execute(st)
+        await db.commit()
+
+    async def get_user(self, db: AsyncSession, username: str, fields):
+        fields = map(lambda el: el.name.value, fields)
+        st = select(getattr(self.model, field) for field in fields).filter_by(username=username)
+        res = await db.execute(st)
+        user = res.first()
+        c = Container()
+        c.__dict__.update(zip(fields, user)) # hack to describe field: value
+        return c
 
 cruduser = CrudUser(User)
