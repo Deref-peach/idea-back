@@ -14,12 +14,12 @@ class CreateUser:
 
 @stb.input
 class UpdateUser:
-    hashed_password: str
-    username: str
-    fullname: str
-    email: str
-    resume: Optional[str]
-    skills: Optional[list[dict[str, str]]]
+    hashed_password: Optional[str] = None
+    username: Optional[str] = None
+    fullname: Optional[str] = None
+    email: Optional[str] = None
+    resume: Optional[str] = None
+    skills: Optional[list[dict[str, str]]] = None
     # TODO:  upload avatar stb.file_uploads.Upload
 
 @stb.input

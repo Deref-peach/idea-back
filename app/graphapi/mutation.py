@@ -56,3 +56,11 @@ class Mutation:
     @stb.mutation
     async def UpdateUser(self, user: UpdateUser):
         pass
+
+    @stb.mutation
+    async def login(self, username: str, password: str):
+        pass
+
+    @stb.mutation
+    async def logout(self, username: str, password: str) -> bool:
+        pass
